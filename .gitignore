@@ -1,0 +1,20 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# BotCity credentials for local runs
+.env
+
+# Generated at runtime
+output/
+temp/
+assets/*.csv
+
+# IDE
+.vscode/
+.idea/
