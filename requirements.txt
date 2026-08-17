@@ -8,3 +8,4 @@ undetected-chromedriver
 selenium
 pandas
 python-dotenv
+pywin32

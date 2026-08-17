@@ -8,14 +8,13 @@ logger = logging.getLogger(__name__)
 
 '''
 datasources.py
-    Provides the CSVSource used to iterate the order items.
+    Provides the CSVSource used to iterate the scraped catalog items.
 
     NOTE: unlike the plain BeaPro template, `data_source` is NOT built at import
-    time here. Our input file (assets/order_list.csv) only exists after
-    framework.initialize() has generated the fake buyer, scraped the Sauce Demo
-    catalog and randomly picked the products to purchase - all of which need the
+    time here. Our input file (assets/item_list.csv) only exists after
+    framework.initialize() has scraped the Sauce Demo catalog, which needs the
     WebBot already running. So `data_source` starts as None and is assigned by
-    framework.initialize() once assets/order_list.csv has been written.
+    framework.initialize() once assets/item_list.csv has been written.
     Consumers must reference `datasources.data_source` (the module), not import
     the name directly, otherwise they would keep a stale `None` reference.
 '''
@@ -84,5 +83,5 @@ class CSVSource(BaseSource):
         return f"./output/CSV_BotCity_task-{task_id}_date-{date}.csv"
 
 
-# Assigned by framework.initialize() once assets/order_list.csv has been generated.
+# Assigned by framework.initialize() once assets/item_list.csv has been generated.
 data_source = None

@@ -1,18 +1,24 @@
 # Desafio RPA - Sauce Demo → Fakturama
 
-Automação que compra produtos em uma loja de e-commerce de teste ([Sauce Demo](https://www.saucedemo.com/v1/)) e replica a mesma compra no [Fakturama](https://www.fakturama.info/) (software desktop de faturamento), gerando evidências de que as duas transações coincidem.
+Exercício de aula combinando as duas grandes famílias de automação RPA:
+**web** (seletor/DOM, via Selenium/BotCity WebBot) e **desktop** (reconhecimento
+de imagem, via BotCity DesktopBot). O bot raspa um comprador fake e o catálogo
+completo de uma loja de teste ([Sauce Demo](https://www.saucedemo.com/)) e
+replica esses dados como cadastro mestre no [Fakturama](https://www.fakturama.info/)
+(software desktop de faturamento).
 
-Construído sobre o framework BeaPro (BotCity Enterprise Automation): state management, exceções tipadas (`BusinessException`/`SystemException`/`InterruptException`), datasource CSV, e logging/relatórios duplos (arquivo local + BotCity Maestro Orchestrator).
+Construído sobre o framework BeaPro (BotCity Enterprise Automation): state
+management, exceções tipadas (`BusinessException`/`SystemException`/`InterruptException`),
+datasource CSV, e logging/relatórios duplos (arquivo local + BotCity Maestro Orchestrator).
 
 ## O que o bot faz
 
 1. Gera um comprador fake brasileiro em [fakenamegenerator.com](https://www.fakenamegenerator.com/gen-random-br-br.php)
 2. Loga no Sauce Demo e raspa o catálogo completo (6 produtos) → `assets/item_list.csv`
-3. Sorteia 3 produtos para compra → `assets/order_list.csv`
-4. Cadastra o comprador e o catálogo completo no Fakturama, e abre um novo pedido
-5. Para cada um dos 3 produtos sorteados: adiciona ao carrinho no site **e** digita a linha no pedido do Fakturama, reportando sucesso/erro individualmente
-6. Finaliza a compra no site (com os dados do comprador) e salva/exporta o pedido no Fakturama
-7. Reúne as evidências de auditoria (screenshots do checkout + log + CSV de resultado) em `output/`
+3. Cadastra o comprador no Fakturama
+4. Para cada um dos 6 produtos raspados: cadastra como um novo produto no Fakturama, reportando sucesso/erro individualmente
+
+**Critério de validação**: comparar a contagem/nomes em `assets/item_list.csv` com a lista de Produtos do Fakturama após a execução — se bateu, a automação funcionou ponta a ponta.
 
 ## Estrutura
 
@@ -43,6 +49,5 @@ Sem um arquivo `.env`, o bot roda em **test mode** (sem conta BotCity, sem uploa
 ## Saída
 
 - `output/Log_BotCity_...log` — log completo da execução
-- `output/CSV_BotCity_...csv` — status (sucesso/erro) de cada um dos 3 produtos
-- `output/sauce_demo_checkout_*.png` — evidência da compra no site
+- `output/CSV_BotCity_...csv` — status (sucesso/erro) de cada um dos 6 produtos cadastrados
 - `temp/error-*.png` — screenshot automático em caso de erro

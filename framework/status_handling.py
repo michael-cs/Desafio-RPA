@@ -13,7 +13,7 @@ status_handling.py
 
     NOTE: imports the `datasources` module (not `data_source` directly), since
     framework.datasources.data_source is only assigned once framework.initialize()
-    has generated assets/order_list.csv - see framework/datasources.py.
+    has generated assets/item_list.csv - see framework/datasources.py.
 '''
 
 

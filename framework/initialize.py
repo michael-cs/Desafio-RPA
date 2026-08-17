@@ -1,5 +1,7 @@
 from framework.logger import setup_botcity_log, setup_logger
 from fakturama_desktop import desktop as fakturama_desktop
+from botcity.web.browsers.firefox import default_options as firefox_default_options
+from webdriver_manager.firefox import GeckoDriverManager
 from botcity.web import Browser, WebBot
 from framework.finalize import cleanup
 from ecommerce import fake_contact, sauce_demo
@@ -16,14 +18,14 @@ logger = logging.getLogger(__name__)
 initialize.py
     Starts the automation process by setting up the logger, cleaning the output
     directory, opening the browser/Fakturama, and running the one-time bootstrap
-    (fake buyer, catalog scraping, random order pick, Fakturama contact/catalog/
-    order setup). Handles both initial startup and restart scenarios.
+    (fake buyer + catalog scraping + Fakturama contact registration). Handles
+    both initial startup and restart scenarios.
 
     On a SystemException restart, bootstrap() is intentionally NOT re-run: the
-    fake buyer, the scraped catalog, the randomly picked order and the already
-    open Fakturama order must stay exactly as they were, otherwise we'd overwrite
-    assets/order_list.csv mid-iteration and create duplicate Fakturama records.
-    Restart only reopens the browser and logs back into Sauce Demo.
+    fake buyer and the scraped catalog must stay exactly as they were,
+    otherwise we'd overwrite assets/item_list.csv mid-iteration and create a
+    duplicate Fakturama contact. Restart only reopens the browser and logs
+    back into Sauce Demo.
 '''
 
 
@@ -61,9 +63,10 @@ def initialize(restart: bool = False):
 
 def bootstrap():
     """
-    One-time setup that must run exactly once per execution: generates the fake
-    buyer, scrapes the Sauce Demo catalog, randomly picks the order, and
-    registers the buyer/catalog/new-order in Fakturama.
+    One-time setup that must run exactly once per execution: generates the
+    fake buyer, scrapes the full Sauce Demo catalog, and registers the buyer
+    as a Fakturama contact. The per-product Fakturama registration then runs
+    as the item loop in bot.py (see framework/process.py::process_item()).
     """
     logger.info("Generating fake buyer contact...")
     STATE.contact = fake_contact.generate_contact(STATE.webbot)
@@ -72,24 +75,32 @@ def bootstrap():
     sauce_demo.login(STATE.webbot)
     sauce_demo.scrape_catalog(STATE.webbot)
 
-    logger.info(f"Selecting {config.ORDER_SIZE} random products to purchase...")
-    sauce_demo.select_random_order()
-
-    logger.info("Registering buyer and full catalog in Fakturama...")
+    logger.info("Registering the buyer as a Fakturama contact...")
     fakturama_desktop.ensure_running(STATE.desktopbot)
     fakturama_desktop.register_contact(STATE.desktopbot, STATE.contact)
-    fakturama_desktop.register_all_products(STATE.desktopbot)
-    fakturama_desktop.open_new_order(STATE.desktopbot, STATE.contact)
 
-    datasources.data_source = datasources.CSVSource(config.CSV_ORDER)
+    datasources.data_source = datasources.CSVSource(config.CSV_ITEMS)
 
 
 def init_webbot():
-    """Instantiates BotCity's WebBot using undetected-chromedriver and opens the browser."""
+    """Instantiates BotCity's WebBot using Firefox and opens the browser."""
     STATE.webbot = WebBot()
     bot = STATE.webbot
-    bot.browser = Browser.UNDETECTED_CHROME
+    bot.browser = Browser.FIREFOX
     bot.headless = False
+    # Unlike undetected-chromedriver, geckodriver isn't self-managed - WebBot
+    # needs a real driver executable here. webdriver-manager downloads/caches
+    # the matching geckodriver for the installed Firefox version and returns
+    # its path.
+    bot.driver_path = GeckoDriverManager().install()
+
+    # Without this, Firefox defaults its download folder to the current
+    # working directory (the project root) - stray downloads end up
+    # committed-looking next to the source files.
+    download_folder = str(Path(__file__).parent.parent / "temp")
+    bot.options = firefox_default_options(headless=bot.headless, download_folder_path=download_folder)
+
+    bot.start_browser()
 
 
 def init_desktopbot():

@@ -1,7 +1,6 @@
-from framework.exceptions import SystemException, BusinessException, BotException
+from framework.exceptions import BotException
 from fakturama_desktop import desktop as fakturama_desktop
 from framework.state import STATE
-from ecommerce import sauce_demo
 import logging
 import traceback
 
@@ -9,16 +8,10 @@ logger = logging.getLogger(__name__)
 
 '''
 process.py
-    process_item(item): per-item automation, one call per product randomly
-    picked for the order (assets/order_list.csv) - adds it to the Sauce Demo
-    cart and types it into the already-open Fakturama order.
-
-    finish_transaction(): runs once, after every item has gone through
-    process_item(), while the browser/Fakturama are still open. It completes
-    the Sauce Demo checkout and saves/exports the Fakturama order, producing
-    the audit evidence that both purchases match. It intentionally lives
-    outside of framework/finalize.py's cleanup(), since cleanup() also runs on
-    SystemException restarts (mid-run) and must not trigger the checkout early.
+    process_item(item): per-item automation, one call per product scraped
+    from the Sauce Demo catalog (assets/item_list.csv) - registers it as a
+    new product in Fakturama, replicating the web-scraped master data into
+    the desktop system.
 '''
 
 
@@ -31,8 +24,7 @@ def process_item(item):
     logger.info(f"Item processing has started: {item}.")
 
     try:
-        sauce_demo.add_to_cart(STATE.webbot, item)
-        fakturama_desktop.add_order_line(STATE.desktopbot, item)
+        fakturama_desktop.register_product(STATE.desktopbot, item)
     except BotException as e:
         if e.kwargs:
             logger.info("Exception with kwargs caught. Re-raising with context info...")
@@ -47,11 +39,14 @@ def process_item(item):
     except Exception as e:
         raise e
 
-    result_message = f"{item['Item Name']} added to cart (Sauce Demo) and to the order (Fakturama)."
-    return result_message
+    return f"{item['Item Name']} registered in Fakturama."
 
 
-def finish_transaction():
-    logger.info("Finishing the Sauce Demo checkout and the Fakturama order...")
-    sauce_demo.checkout(STATE.webbot, STATE.contact)
-    fakturama_desktop.finish_order(STATE.desktopbot)
+def capture_products_evidence():
+    """
+    Runs once, after every catalog item has gone through process_item(),
+    while Fakturama is still open. Screenshots the full products list as
+    evidence that every scraped product was registered.
+    """
+    logger.info("Capturing Fakturama products list evidence...")
+    fakturama_desktop.capture_products_evidence(STATE.desktopbot)

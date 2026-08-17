@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 '''
 fake_contact.py
     Generates a fake Brazilian buyer (name + CEP) from fakenamegenerator.com.
-    This buyer is used both as the Sauce Demo checkout contact and as the
-    contact registered in Fakturama, so the two purchases can be compared.
+    This buyer is registered as a contact in Fakturama - the "desktop" half
+    of the class exercise.
 '''
 
 

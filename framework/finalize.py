@@ -1,6 +1,9 @@
+from fakturama_desktop import desktop as fakturama_desktop
 from framework.state import STATE
+from framework import config
 from pathlib import Path
 import logging
+import shutil
 import glob
 
 logger = logging.getLogger(__name__)
@@ -26,6 +29,37 @@ def cleanup():
         raise ex
 
 
+def close_fakturama():
+    """
+    Closes Fakturama at the very end of a successful run. Every contact/product
+    registration already saves itself individually (ctrl+s), so there's no
+    final "save all" step needed here - just closing the app.
+    """
+    try:
+        if STATE.desktopbot:
+            process = STATE.desktopbot.find_process(name=config.FAKTURAMA_PROCESS_NAME)
+            if process:
+                STATE.desktopbot.terminate_process(process)
+                logger.info("Fakturama closed.")
+    except Exception as ex:
+        logger.error(f"Error closing Fakturama: {ex}")
+
+
+def copy_generated_csvs_to_output():
+    """
+    Copies the scraped buyer/catalog CSVs into ./output/ so they're uploaded
+    to BotCity Orchestrator as task evidence, alongside the log/result CSV
+    and the Fakturama screenshots.
+    """
+    for src in (config.CSV_CONTACT, config.CSV_ITEMS):
+        try:
+            if Path(src).exists():
+                shutil.copy(src, "./output/" + Path(src).name)
+                logger.info(f"Copied {src} to output/ as evidence.")
+        except Exception as ex:
+            logger.error(f"Error copying {src} to output/: {ex}")
+
+
 def finalize():
     """
     Performs steps to finalize the automation process gracefully in the BotCity Orchestrator.
@@ -33,6 +67,9 @@ def finalize():
     try:
         logger.info(
             f"The automation process has finished. Task ID: {STATE.task_id}. {finish_status_message()}")
+
+        close_fakturama()
+        copy_generated_csvs_to_output()
 
         try:
             STATE.maestro.new_log_entry(
@@ -64,8 +101,10 @@ def upload_output_orchestrator():
                 filepath=fp
             )
     except Exception as ex:
+        # Best-effort reporting step, called from finalize()'s own `finally`
+        # clause - a transient network/Orchestrator failure here must not
+        # crash the process and hide whether the actual automation succeeded.
         print(f"Error uploading output to BotCity Orchestrator: {ex}")
-        raise ex
 
 
 def finish_task_orchestrator():
@@ -79,8 +118,8 @@ def finish_task_orchestrator():
             failed_items=STATE.error_count
         )
     except Exception as ex:
+        # Same reasoning as upload_output_orchestrator() above.
         print(f"Error finishing task in the BotCity Orchestrator: {ex}")
-        raise ex
 
 
 def finish_status_message() -> str:
