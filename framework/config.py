@@ -3,7 +3,7 @@ from pathlib import Path
 # Process settings
 # BotCity Maestro test task on the personal tenant (MAESTRO_URL/LOGIN/KEY come
 # from the machine's environment variables - see framework/state.py).
-TASK_ID = "25058316"
+TASK_ID = "25059164"
 ACTIVITY_NAME = "Desafio RPA - Sauce Demo to Fakturama"
 
 # Sauce Demo (e-commerce under test)
