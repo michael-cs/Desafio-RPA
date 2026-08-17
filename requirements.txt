@@ -1,0 +1,11 @@
+botcity-framework-base
+botcity-framework-core
+botcity-framework-web
+botcity-maestro-sdk
+botcity-csv-plugin
+webdriver-manager
+undetected-chromedriver
+selenium
+pandas
+python-dotenv
+pywin32
